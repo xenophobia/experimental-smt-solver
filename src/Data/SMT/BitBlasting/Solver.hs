@@ -6,6 +6,7 @@ import qualified Data.IntMap as IM
 import Data.SMT.Types
 import Data.SMT.Solution
 
+import Control.Monad
 import Control.Monad.State
 
 import Ersatz hiding (Var)
@@ -31,4 +32,22 @@ flatteningTerm width (Const n) = return $ ([if testBit n i then true else false 
 flatteningTerm width (Var n) = do
   bs <- replicateM width exists
   return $ (bs, singleton n bs)
+flatteningTerm width (t1 :+: t2) = do
+  (t1Flattened, m1) <- flatteningTerm width t1
+  (t2Flattened, m2) <- flatteningTerm width t2
+  flattened <- adder width t1Flattened t2Flattened
+  return (flattened, m1 `union` m2)
 flatteningTerm _ _ = undefined
+
+adder :: (MonadState s m, HasSAT s) => Int -> [Bit] -> [Bit] -> m [Bit]
+adder width bs1 bs2 = do
+  bs <- replicateM width exists
+  overflowBit <- foldM aux false $ (reverse $ zip3 bs1 bs2 bs)
+  assert $ overflowBit === false
+  return bs
+  where
+    aux cin (b1, b2, b) = do
+      let (b', cout) = full_adder b1 b2 cin
+      assert $ b === b'
+      return cout
+  
