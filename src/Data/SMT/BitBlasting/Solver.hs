@@ -1,6 +1,8 @@
 module Data.SMT.BitBlasting.Solver where
 
+import Prelude hiding ((&&))
 import Data.Bits
+import Data.List (intersect)
 import Data.IntMap (IntMap, union, singleton)
 import qualified Data.IntMap as IM
 import Data.SMT.Types
@@ -10,6 +12,10 @@ import Control.Monad
 import Control.Monad.State
 
 import Ersatz hiding (Var)
+
+instance Equatable a => Equatable (IntMap a) where
+  m1 === m2 = foldl (&&) true $ map (\k -> m1 IM.! k === m2 IM.! k) overlap
+    where overlap = IM.keys m1 `intersect` IM.keys m2
 
 bitblasting :: Int -> SMT -> IO (Maybe SMTSolution)
 bitblasting width smt = do
@@ -25,6 +31,12 @@ flattening width (t1 :=: t2) = do
   (t1Flattened, m1) <- flatteningTerm width t1
   (t2Flattened, m2) <- flatteningTerm width t2
   assert $ t1Flattened === t2Flattened
+  assert $ m1 === m2
+  return $ m1 `union` m2
+flattening width (smt1 :&: smt2) = do
+  m1 <- flattening width smt1
+  m2 <- flattening width smt2
+  assert $ m1 === m2
   return $ m1 `union` m2
 
 flatteningTerm :: (MonadState s m, HasSAT s) => Int -> Term -> m ([Bit], IntMap [Bit])
