@@ -18,10 +18,10 @@ instance Equatable a => Equatable (IntMap a) where
   m1 === m2 = foldl (&&) true $ map (\k -> m1 IM.! k === m2 IM.! k) overlap
     where overlap = IM.keys m1 `intersect` IM.keys m2
 
-decodeToTwoComplement :: Int -> [Bool] -> Int
-decodeToTwoComplement _ [] = undefined
-decodeToTwoComplement width (map (\x -> if x then 1 else 0) -> b:bs) = 
-  foldl (\acc b -> acc*2+b) 0 (-b:bs)
+decodeToTwoComplement :: [Bool] -> Int
+decodeToTwoComplement [] = undefined
+decodeToTwoComplement (map (\x -> if x then 1 else 0) -> b:bs) = 
+  foldl (\acc n -> acc*2+n) 0 (-b:bs)
 
 bitblasting :: Int -> SMT -> IO (Maybe SMTSolution)
 bitblasting width smt = do
@@ -29,7 +29,7 @@ bitblasting width smt = do
   case result of
     Unsolved -> return Nothing
     Ersatz.Unsatisfied -> return $ Just (Data.SMT.Solution.Unsatisfied)
-    Ersatz.Satisfied -> return $ Just (Data.SMT.Solution.Satisfied (IM.map (decodeToTwoComplement width) answer))
+    Ersatz.Satisfied -> return $ Just (Data.SMT.Solution.Satisfied (IM.map decodeToTwoComplement answer))
     where flattened = flattening width smt
 
 flattening :: (MonadState s m, HasSAT s) => Int -> SMT -> m (IntMap [Bit])
