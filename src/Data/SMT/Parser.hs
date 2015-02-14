@@ -5,7 +5,7 @@ import Data.SMT.Types
 import Data.List.Split
 
 -- Tempolary impl.
-parseSMT :: String -> IO SMT
+parseSMT :: String -> IO (AbstFormula Term)
 parseSMT str = return $ foldl1 (:&:) $ map aux eqs
   where eqs = splitOn "&" str
         aux eq = let (leftHand, _:rightHand) = span (/= '=') eq in

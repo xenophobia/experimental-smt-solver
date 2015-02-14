@@ -6,7 +6,7 @@ import Data.Bits
 import Data.List (intersect)
 import Data.IntMap (IntMap, union, singleton)
 import qualified Data.IntMap as IM
-import Data.SMT.Types
+import Data.SMT.BitBlasting.Types
 import Data.SMT.Solution
 
 import Control.Monad
@@ -23,7 +23,7 @@ decodeToTwoComplement [] = undefined
 decodeToTwoComplement (map (\x -> if x then 1 else 0) -> b:bs) = 
   foldl (\acc n -> acc*2+n) 0 (-b:bs)
 
-bitblasting :: Int -> SMT -> IO (Maybe SMTSolution)
+bitblasting :: Int -> Formula -> IO (Maybe SMTSolution)
 bitblasting width smt = do
   (result, ~(Just answer)) <- minisat `solveWith` flattened
   case result of
@@ -32,7 +32,7 @@ bitblasting width smt = do
     Ersatz.Satisfied -> return $ Just (Data.SMT.Solution.Satisfied (IM.map decodeToTwoComplement answer))
     where flattened = flattening width smt
 
-flattening :: (MonadState s m, HasSAT s) => Int -> SMT -> m (IntMap [Bit])
+flattening :: (MonadState s m, HasSAT s) => Int -> Formula -> m (IntMap [Bit])
 flattening width (t1 :=: t2) = do
   (t1Flattened, m1) <- flatteningTerm width t1
   (t2Flattened, m2) <- flatteningTerm width t2
