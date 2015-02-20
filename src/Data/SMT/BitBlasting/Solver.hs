@@ -1,4 +1,9 @@
 {-# Language ViewPatterns #-}
+{-# Language GADTs #-}
+{-# LAnguage TypeOperators #-}
+{-# Language DataKinds #-}
+{-# Language ScopedTypeVariables #-}
+
 module Data.SMT.BitBlasting.Solver where
 
 import Prelude hiding ((&&), (||))
@@ -7,7 +12,9 @@ import Data.List (intersect)
 import Data.IntMap (IntMap, union, singleton)
 import qualified Data.IntMap as IM
 import Data.SMT.BitBlasting.Types
+import Data.SMT.Abstract.Types
 import Data.SMT.Solution
+import Data.Extensible.Sum
 
 import Control.Monad
 import Control.Monad.State
@@ -33,32 +40,36 @@ bitblasting width smt = do
     where flattened = flattening width smt
 
 flattening :: (MonadState s m, HasSAT s) => Int -> Formula -> m (IntMap [Bit])
-flattening width (t1 :=: t2) = do
-  (t1Flattened, m1) <- flatteningTerm width t1
-  (t2Flattened, m2) <- flatteningTerm width t2
-  assert $ t1Flattened === t2Flattened
-  assert $ m1 === m2
-  return $ m1 `union` m2
-flattening width (smt1 :&: smt2) = do
-  m1 <- flattening width smt1
-  m2 <- flattening width smt2
-  assert $ m1 === m2
-  return $ m1 `union` m2
+flattening width = flatteningEQUAL <:| flatteningLESSTHAN <:| exhaust
+  where
+    flatteningEQUAL (t1 :=: t2 :: FormulaComponent EQUAL) = do
+      (t1Flattened, m1) <- flatteningTerm width t1
+      (t2Flattened, m2) <- flatteningTerm width t2
+      assert $ t1Flattened === t2Flattened
+      assert $ m1 === m2
+      return $ m1 `union` m2
+    flatteningLESSTHAN (smt1 :&: smt2 :: FormulaComponent AND) = do
+      m1 <- flattening width smt1
+      m2 <- flattening width smt2
+      assert $ m1 === m2
+      return $ m1 `union` m2
 
 flatteningTerm :: (MonadState s m, HasSAT s) => Int -> Term -> m ([Bit], IntMap [Bit])
-flatteningTerm width (Const n) | -(2^(width-1)) <= n && n < 2^(width-1) = return $ ([if testBit n i then true else false | i <- [width-1, width-2 .. 0]], IM.empty)
-                               | otherwise = assert false >> return (replicate width false, IM.empty)                             
-flatteningTerm width (Var n) = do
-  bs <- replicateM width exists
-  return $ (bs, singleton n bs)
-flatteningTerm width (t1 :+: t2) = do
-  (t1Flattened, m1) <- flatteningTerm width t1
-  (t2Flattened, m2) <- flatteningTerm width t2
-  flattened <- adder width t1Flattened t2Flattened
-  assert $ (head t1Flattened /== head t2Flattened)
-           || (head t1Flattened === head flattened) -- overflow detection
-  return (flattened, m1 `union` m2)
-flatteningTerm _ _ = undefined
+flatteningTerm width = flatteningTermVAR <:| flatteningTermINT <:| flatteningTermADD <:| exhaust
+  where
+    flatteningTermVAR (Var n :: TermComponent VAR) = do
+      bs <- replicateM width exists
+      return $ (bs, singleton n bs)
+    flatteningTermINT (IConst n :: TermComponent INT)
+      | -(2^(width-1)) <= n && n < 2^(width-1) = return $ ([if testBit n i then true else false | i <- [width-1, width-2 .. 0]], IM.empty)
+      | otherwise = assert false >> return (replicate width false, IM.empty)
+    flatteningTermADD (t1 :+: t2 :: TermComponent ADD) = do
+      (t1Flattened, m1) <- flatteningTerm width t1
+      (t2Flattened, m2) <- flatteningTerm width t2
+      flattened <- adder width t1Flattened t2Flattened
+      assert $ (head t1Flattened /== head t2Flattened)
+               || (head t1Flattened === head flattened) -- overflow detection
+      return (flattened, m1 `union` m2)
 
 adder :: (MonadState s m, HasSAT s) => Int -> [Bit] -> [Bit] -> m [Bit]
 adder width bs1 bs2 = do
