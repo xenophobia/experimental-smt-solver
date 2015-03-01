@@ -15,7 +15,7 @@ parseEqual :: Parser Term -> Parser Formula
 parseEqual p = embed <$> ((:=:) <$> p <*> (token (char '=') >> p))
 
 parseLessThan :: Parser Term -> Parser Formula
-parseLessThan p = embed <$> ( ((:<:) <$> p <*> (token (char '<') >> p)) <|> (flip (:<:) <$> p <*> (token (char '>') >> p)))
+parseLessThan p = embed <$> ( try ((:<:) <$> p <*> (token (char '<') >> p)) <|> try (flip (:<:) <$> p <*> (token (char '>') >> p)))
 
 parseLiteral :: Parser Term -> Parser Formula
 parseLiteral p = try (parseEqual p) <|> try (parseLessThan p)
