@@ -18,6 +18,7 @@ import Data.Extensible.Sum
 
 import Control.Monad
 import Control.Monad.State
+import qualified Data.IntSet as IS
 
 import Ersatz hiding (Var)
 
@@ -31,13 +32,15 @@ decodeToTwoComplement (map (\x -> if x then 1 else 0) -> b:bs) =
   foldl (\acc n -> acc*2+n) 0 (-b:bs)
 
 bitblasting :: Int -> Formula -> IO (Maybe SMTSolution)
-bitblasting width smt = do
+bitblasting width _fm = do
   (result, ~(Just answer)) <- minisat `solveWith` flattened
   case result of
     Unsolved -> return Nothing
     Ersatz.Unsatisfied -> return $ Just (Data.SMT.Solution.Unsatisfied)
     Ersatz.Satisfied -> return $ Just (Data.SMT.Solution.Satisfied (IM.map decodeToTwoComplement answer))
-    where flattened = flattening width smt
+    where
+      fm = foldl (\acc i -> embed (acc :&: embed (embed (Var i) :=: embed (Var i)))) _fm $ IS.toList (fv _fm)
+      flattened = flattening width fm
 
 flattening :: (MonadState s m, HasSAT s) => Int -> Formula -> m (IntMap [Bit])
 flattening width = flatteningEQUAL <:| flatteningAND <:| flatteningLESSTHAN <:| exhaust

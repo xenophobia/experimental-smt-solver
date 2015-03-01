@@ -15,6 +15,7 @@
 module Data.SMT.Abstract.Types where
 
 import Data.Extensible
+import qualified Data.IntSet as IS
 
 data FComponent = EQUAL | LESSTHAN | AND | OR
 data TComponent = VAR | INT | ADD | NEG
@@ -55,10 +56,31 @@ instance Show (AbstTerm cs :| cs) => Show (AbstTerm cs ADD) where
 instance Show (AbstTerm cs :| cs) => Show (AbstTerm cs NEG) where
   show (Neg t) = "(-" ++ show t ++ ")"
 
+class GetVariables a where
+  fv :: a -> IS.IntSet
 
+instance GetVariables (AbstTerm cs VAR) where
+  fv (Var i) = IS.singleton i
 
+instance GetVariables (AbstTerm cs INT) where
+  fv _ = IS.empty
 
+instance GetVariables (AbstTerm cs :| cs) => GetVariables (AbstTerm cs ADD) where
+  fv (t1 :+: t2) = fv t1 `IS.union` fv t2
 
+instance GetVariables (AbstTerm cs :| cs) => GetVariables (AbstTerm cs NEG) where
+  fv (Neg t) = fv t
 
+instance GetVariables term => GetVariables (AbstFormula term cs EQUAL) where
+  fv (t1 :=: t2) = fv t1 `IS.union` fv t2
+
+instance GetVariables term => GetVariables (AbstFormula term cs LESSTHAN) where
+  fv (t1 :<: t2) = fv t1 `IS.union` fv t2
+
+instance (GetVariables (AbstFormula term cs :| cs)) => GetVariables (AbstFormula term cs AND) where
+  fv (f1 :&: f2) = fv f1 `IS.union` fv f2
+  
+instance (GetVariables (AbstFormula term cs :| cs)) => GetVariables (AbstFormula term cs OR) where
+  fv (f1 :|: f2) = fv f1 `IS.union` fv f2
 
 
