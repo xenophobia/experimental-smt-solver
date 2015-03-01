@@ -42,34 +42,39 @@ bitblasting width smt = do
 flattening :: (MonadState s m, HasSAT s) => Int -> Formula -> m (IntMap [Bit])
 flattening width = flatteningEQUAL <:| flatteningLESSTHAN <:| exhaust
   where
-    flatteningEQUAL (t1 :=: t2 :: FormulaComponent EQUAL) = do
+    flatteningEQUAL (t1 :=: t2 :: FormulaOf EQUAL) = do
       (t1Flattened, m1) <- flatteningTerm width t1
       (t2Flattened, m2) <- flatteningTerm width t2
       assert $ t1Flattened === t2Flattened
       assert $ m1 === m2
       return $ m1 `union` m2
-    flatteningLESSTHAN (smt1 :&: smt2 :: FormulaComponent AND) = do
+    flatteningLESSTHAN (smt1 :&: smt2 :: FormulaOf AND) = do
       m1 <- flattening width smt1
       m2 <- flattening width smt2
       assert $ m1 === m2
       return $ m1 `union` m2
 
 flatteningTerm :: (MonadState s m, HasSAT s) => Int -> Term -> m ([Bit], IntMap [Bit])
-flatteningTerm width = flatteningTermVAR <:| flatteningTermINT <:| flatteningTermADD <:| exhaust
+flatteningTerm width = flatteningTermVAR <:| flatteningTermINT <:| flatteningTermADD <:| flatteningTermNeg <:| exhaust
   where
-    flatteningTermVAR (Var n :: TermComponent VAR) = do
+    flatteningTermVAR (Var n :: TermOf VAR) = do
       bs <- replicateM width exists
       return $ (bs, singleton n bs)
-    flatteningTermINT (IConst n :: TermComponent INT)
+    flatteningTermINT (IConst n :: TermOf INT)
       | -(2^(width-1)) <= n && n < 2^(width-1) = return $ ([if testBit n i then true else false | i <- [width-1, width-2 .. 0]], IM.empty)
       | otherwise = assert false >> return (replicate width false, IM.empty)
-    flatteningTermADD (t1 :+: t2 :: TermComponent ADD) = do
+    flatteningTermADD (t1 :+: t2 :: TermOf ADD) = do
       (t1Flattened, m1) <- flatteningTerm width t1
       (t2Flattened, m2) <- flatteningTerm width t2
       flattened <- adder width t1Flattened t2Flattened
       assert $ (head t1Flattened /== head t2Flattened)
                || (head t1Flattened === head flattened) -- overflow detection
       return (flattened, m1 `union` m2)
+    flatteningTermNeg (Neg t) = do
+      (tFlattened, m) <- flatteningTerm width t
+      (one, _) <- flatteningTermINT (IConst 1)
+      flattened <- adder width (map Ersatz.not tFlattened) one
+      return (flattened, m)
 
 adder :: (MonadState s m, HasSAT s) => Int -> [Bit] -> [Bit] -> m [Bit]
 adder width bs1 bs2 = do
@@ -81,4 +86,3 @@ adder width bs1 bs2 = do
       let (b', cout) = full_adder b1 b2 cin
       assert $ b === b'
       return cout
-  

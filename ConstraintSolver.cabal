@@ -52,15 +52,17 @@ executable bitblasting
   
   -- Modules included in this executable, other than Main.
   other-modules: Data.SMT.Solution
+               , Data.SMT.Abstract.Classes
                , Data.SMT.Abstract.Types
                , Data.SMT.Parser
+               , Data.SMT.BitBlasting.Types
                , Data.SMT.BitBlasting.Solver
   
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends: base >=4.7 && <4.8, ersatz, containers, split, mtl, extensible, trifecta > 1.5.1
+  build-depends: base >=4.7 && <4.8, ersatz, containers, parsers, mtl, extensible >= 0.3, trifecta > 1.5.1
   
   -- Directories containing source files.
   hs-source-dirs: src

@@ -1,6 +1,9 @@
 {-# Language LambdaCase #-}
 module Main where
 
+import Data.Monoid
+import Control.Applicative
+import Text.Trifecta
 import Data.SMT.Parser
 import Data.SMT.BitBlasting.Solver
 import Data.SMT.Solution
@@ -18,9 +21,11 @@ incrementalTrial i n act | i >= n = act i
 main :: IO ()
 main = do
   input <- getLine
-  parsed <- parseSMT input
-  putStrLn $ "Constraint: " ++ show parsed
-  incrementalTrial 2 defaultThreshold (flip bitblasting parsed) >>= \case
-    Nothing -> putStrLn "Failed to solve"
-    Just Unsatisfied -> putStrLn $ "Unsatisfiable (in threshold = " ++ show defaultThreshold ++ ")"
-    Just (Satisfied ans) -> putStrLn $ "Satisfiable by: " ++ show ans
+  case parseString (parseFormula <* eof) mempty input of
+    Failure d -> print d
+    Success parsed -> do
+      putStrLn $ "Constraint: " ++ show parsed
+      incrementalTrial 2 defaultThreshold (flip bitblasting parsed) >>= \case
+        Nothing -> putStrLn "Failed to solve"
+        Just Unsatisfied -> putStrLn $ "Unsatisfiable (in threshold = " ++ show defaultThreshold ++ ")"
+        Just (Satisfied ans) -> putStrLn $ "Satisfiable by: " ++ show ans
