@@ -6,7 +6,7 @@
 
 module Data.SMT.BitBlasting.Solver where
 
-import Prelude hiding ((&&), (||))
+import Prelude hiding ((&&), (||), not)
 import Data.Bits
 import Data.List (intersect)
 import Data.IntMap (IntMap, union, singleton)
@@ -40,7 +40,7 @@ bitblasting width smt = do
     where flattened = flattening width smt
 
 flattening :: (MonadState s m, HasSAT s) => Int -> Formula -> m (IntMap [Bit])
-flattening width = flatteningEQUAL <:| flatteningLESSTHAN <:| exhaust
+flattening width = flatteningEQUAL <:| flatteningAND <:| flatteningLESSTHAN <:| exhaust
   where
     flatteningEQUAL (t1 :=: t2 :: FormulaOf EQUAL) = do
       (t1Flattened, m1) <- flatteningTerm width t1
@@ -48,11 +48,21 @@ flattening width = flatteningEQUAL <:| flatteningLESSTHAN <:| exhaust
       assert $ t1Flattened === t2Flattened
       assert $ m1 === m2
       return $ m1 `union` m2
-    flatteningLESSTHAN (smt1 :&: smt2 :: FormulaOf AND) = do
-      m1 <- flattening width smt1
-      m2 <- flattening width smt2
+    flatteningAND (f1 :&: f2 :: FormulaOf AND) = do
+      m1 <- flattening width f1
+      m2 <- flattening width f2
       assert $ m1 === m2
       return $ m1 `union` m2
+    flatteningLESSTHAN (t1 :<: t2 :: FormulaOf LESSTHAN) = do
+      (t1Flattened, m1) <- flatteningTerm width t1
+      (t2Flattened, m2) <- flatteningTerm width t2
+      t1Flattened `isLessThan` t2Flattened
+      assert $ m1 === m2
+      return $ m1 `union` m2
+
+isLessThan :: (MonadState s m, HasSAT s) => [Bit] -> [Bit] -> m ()
+isLessThan (b1:bs1) (b2:bs2) = assert $ foldl (\acc (x, y) -> acc || (not x && y)) (b1 && not b2) (zip bs1 bs2)
+isLessThan _ _ = error "isLessThan"
 
 flatteningTerm :: (MonadState s m, HasSAT s) => Int -> Term -> m ([Bit], IntMap [Bit])
 flatteningTerm width = flatteningTermVAR <:| flatteningTermINT <:| flatteningTermADD <:| flatteningTermNeg <:| exhaust

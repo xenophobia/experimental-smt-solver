@@ -14,10 +14,16 @@ import Text.Trifecta
 parseEqual :: Parser Term -> Parser Formula
 parseEqual p = embed <$> ((:=:) <$> p <*> (token (char '=') >> p))
 
+parseLessThan :: Parser Term -> Parser Formula
+parseLessThan p = embed <$> ( ((:<:) <$> p <*> (token (char '<') >> p)) <|> (flip (:<:) <$> p <*> (token (char '>') >> p)))
+
+parseLiteral :: Parser Term -> Parser Formula
+parseLiteral p = try (parseEqual p) <|> try (parseLessThan p)
+
 parseFormula :: Parser Formula
 parseFormula = do
-  eqs <- (parseEqual parseTerm) `sepBy` (token $ char '&')
-  return $ (foldl1 (\t1 t2 -> embed (t1 :&: t2)) eqs)
+  literals <- (parseLiteral parseTerm) `sepBy` (token $ char '&')
+  return $ (foldl1 (\t1 t2 -> embed (t1 :&: t2)) literals)
 
 -- Parsers of terms
 
