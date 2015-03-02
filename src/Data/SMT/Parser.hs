@@ -33,19 +33,21 @@ parseVar = embed <$> (Var . read <$> (char 'X' >> many digit))
 parseIConst :: Parser Term
 parseIConst = embed <$> (IConst . read <$> many digit)
 
-parseAdd :: Parser Term -> Parser Term
-parseAdd p = embed <$> ((:+:) <$> p <*> (token (char '+') >> p))
-
 parseNeg :: Parser Term -> Parser Term
 parseNeg p = embed <$> (Neg <$> (token (char '-') >> p))
 
-parseAtom :: Parser Term ->  Parser Term
-parseAtom p = token $ (parseNeg p)
-              <|> (parens p)
-              <|> parseVar
-              <|> parseIConst
+parseAtom :: Parser Term
+parseAtom = token $ (parseNeg parseFact)
+            <|> (parens parseTerm)
+            <|> parseVar
+            <|> parseIConst
+
+parseFact :: Parser Term
+parseFact = do
+  atoms <- parseAtom `sepBy` (token $ char '*')
+  return $ (foldl1 (\t1 t2 -> embed (t1 :*: t2)) atoms)
 
 parseTerm :: Parser Term
 parseTerm = do
-  atoms <- (parseAtom parseTerm) `sepBy` (token $ char '+')
+  atoms <- parseFact `sepBy` (token $ char '+')
   return $ (foldl1 (\t1 t2 -> embed (t1 :+: t2)) atoms)

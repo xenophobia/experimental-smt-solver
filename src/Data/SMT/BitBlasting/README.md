@@ -7,9 +7,12 @@
 
 ```
 $ bitblasting
-X1 + X2 = 200 & X1 + 300 = X2
-Constraint: ((Var 1 :+: Var 2) :=: Const 200) :&: ((Var 1 :+: Const 300) :=: Var 2)
-Satisfiable by: fromList [(1,-50),(2,250)]
+X1+X2+X3=10 & X1+X3<5
+Constraint: X1+X2+X3=10&X1+X3<5
+Satisfiable by:
+X1 = 2
+X2 = 8
+X3 = 0
 ```
 
 対応している制約

@@ -68,7 +68,11 @@ isLessThan (b1:bs1) (b2:bs2) = assert $ (foldr (\(x, y) acc -> (not x && y) || (
 isLessThan _ _ = error "isLessThan"
 
 flatteningTerm :: (MonadState s m, HasSAT s) => Int -> Term -> m ([Bit], IntMap [Bit])
-flatteningTerm width = flatteningTermVAR <:| flatteningTermINT <:| flatteningTermADD <:| flatteningTermNeg <:| exhaust
+flatteningTerm width = flatteningTermVAR
+                       <:| flatteningTermINT
+                       <:| flatteningTermADD
+                       <:| flatteningTermMUL
+                       <:| flatteningTermNeg <:| exhaust
   where
     flatteningTermVAR (Var n :: TermOf VAR) = do
       bs <- replicateM width exists
@@ -83,6 +87,8 @@ flatteningTerm width = flatteningTermVAR <:| flatteningTermINT <:| flatteningTer
       assert $ (head t1Flattened /== head t2Flattened)
                || (head t1Flattened === head flattened) -- overflow detection
       return (flattened, m1 `union` m2)
+    flatteningTermMUL (t1 :*: t2) = do
+      undefined -- TODO
     flatteningTermNeg (Neg t) = do
       (tFlattened, m) <- flatteningTerm width t
       (one, _) <- flatteningTermINT (IConst 1)

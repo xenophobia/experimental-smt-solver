@@ -4,9 +4,11 @@ module Main where
 import Data.Monoid
 import Control.Applicative
 import Text.Trifecta
+import Data.SMT.Abstract.Types
 import Data.SMT.Parser
 import Data.SMT.BitBlasting.Solver
 import Data.SMT.Solution
+import qualified Data.IntMap as IM
 
 defaultThreshold :: Int
 defaultThreshold = 10
@@ -24,8 +26,9 @@ main = do
   case parseString (parseFormula <* eof) mempty input of
     Failure d -> print d
     Success parsed -> do
-      putStrLn $ "Constraint: " ++ show parsed
+      putStrLn $ "Constraint: " ++ ppr parsed
       incrementalTrial 2 defaultThreshold (flip bitblasting parsed) >>= \case
         Nothing -> putStrLn "Failed to solve"
         Just Unsatisfied -> putStrLn $ "Unsatisfiable (in threshold = " ++ show defaultThreshold ++ ")"
-        Just (Satisfied ans) -> putStrLn $ "Satisfiable by: " ++ show ans
+        Just (Satisfied ans) -> putStrLn $ "Satisfiable by: " ++ concat (map pr (IM.toList ans))
+          where pr (i, n) = '\n' : 'X' : show i ++ " = " ++ show n
