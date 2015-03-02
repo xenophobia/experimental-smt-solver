@@ -64,7 +64,7 @@ flattening width = flatteningEQUAL <:| flatteningAND <:| flatteningLESSTHAN <:| 
       return $ m1 `union` m2
 
 isLessThan :: (MonadState s m, HasSAT s) => [Bit] -> [Bit] -> m ()
-isLessThan (b1:bs1) (b2:bs2) = assert $ (b1 || not b2) && (foldl (\acc (x, y) -> acc || (not x && y)) (b1 && not b2) (zip bs1 bs2))
+isLessThan (b1:bs1) (b2:bs2) = assert $ (foldr (\(x, y) acc -> (not x && y) || (x === y && acc)) false (zip (not b1 : bs1) (not b2 : bs2)))
 isLessThan _ _ = error "isLessThan"
 
 flatteningTerm :: (MonadState s m, HasSAT s) => Int -> Term -> m ([Bit], IntMap [Bit])
