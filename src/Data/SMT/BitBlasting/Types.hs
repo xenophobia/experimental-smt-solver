@@ -44,3 +44,13 @@ instance GetVariables Formula where
        <:| (fv :: FormulaOf AND -> IS.IntSet)
        <:| (fv :: FormulaOf LESSTHAN -> IS.IntSet)
        <:| exhaust
+
+-- configuration
+
+data Config = Config {
+  startWidth :: Int
+  , maxWidth :: Int 
+  }
+
+defaultConfig :: Config
+defaultConfig = Config 2 10

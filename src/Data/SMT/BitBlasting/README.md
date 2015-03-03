@@ -7,12 +7,12 @@
 
 ```
 $ bitblasting
-X1+X2+X3=10 & X1+X3<5
-Constraint: X1+X2+X3=10&X1+X3<5
+X1 * X2 * X3 = 30 & X1 + X2 + X3 = 0 & X1 < X2 & X2 < X3
+Constraint: X1*X2*X3=30&X1+X2+X3=0&X1<X2&X2<X3
 Satisfiable by:
-X1 = 2
-X2 = 8
-X3 = 0
+X1 = -5
+X2 = -1
+X3 = 6
 ```
 
 対応している制約
@@ -26,4 +26,5 @@ Constraint := Constraint & Constraint
             | Xn (Variable: nは自然数)
 			| -Term
             | Term + Term
+			| Term * Term
 ```
