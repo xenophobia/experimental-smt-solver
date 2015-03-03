@@ -6,6 +6,7 @@
 
 module Data.SMT.BitBlasting.Solver where
 
+import Debug.Trace
 import Prelude hiding ((&&), (||), not)
 import Data.Bits
 import Data.List (intersect)
@@ -20,7 +21,8 @@ import Control.Monad
 import Control.Monad.State
 import qualified Data.IntSet as IS
 
-import Ersatz hiding (Var)
+import Ersatz hiding (Var, Satisfied, Unsatisfied, Unsolved, Solution)
+import qualified Ersatz
 
 instance Equatable a => Equatable (IntMap a) where
   m1 === m2 = foldl (&&) true $ map (\k -> m1 IM.! k === m2 IM.! k) overlap
@@ -31,13 +33,13 @@ decodeToTwoComplement [] = undefined
 decodeToTwoComplement (map (\x -> if x then 1 else 0) -> b:bs) = 
   foldl (\acc n -> acc*2+n) 0 (-b:bs)
 
-bitblasting :: Int -> Formula -> IO (Maybe SMTSolution)
+bitblasting :: Int -> Formula -> IO Solution
 bitblasting width _fm = do
   (result, ~(Just answer)) <- minisat `solveWith` flattened
   case result of
-    Unsolved -> return Nothing
-    Ersatz.Unsatisfied -> return $ Just (Data.SMT.Solution.Unsatisfied)
-    Ersatz.Satisfied -> return $ Just (Data.SMT.Solution.Satisfied (IM.map decodeToTwoComplement answer))
+    Ersatz.Unsolved -> return Unknown
+    Ersatz.Unsatisfied -> return Unsatisfied
+    Ersatz.Satisfied -> return $ Satisfied (IM.map decodeToTwoComplement answer)
     where
       fm = foldl (\acc i -> embed (acc :&: embed (embed (Var i) :=: embed (Var i)))) _fm $ IS.toList (fv _fm)
       flattened = flattening width fm
@@ -84,8 +86,9 @@ flatteningTerm width = flatteningTermVAR
       (t1Flattened, m1) <- flatteningTerm width t1
       (t2Flattened, m2) <- flatteningTerm width t2
       flattened <- adder width t1Flattened t2Flattened
+      assert $ m1 === m2
       assert $ (head t1Flattened /== head t2Flattened)
-               || (head t1Flattened === head flattened) -- overflow detection
+               || (head t1Flattened === head t2Flattened && head t1Flattened === head flattened) -- overflow detection
       return (flattened, m1 `union` m2)
     flatteningTermMUL (t1 :*: t2) = do
       undefined -- TODO

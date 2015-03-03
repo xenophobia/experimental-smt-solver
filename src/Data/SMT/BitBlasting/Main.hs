@@ -13,11 +13,11 @@ import qualified Data.IntMap as IM
 defaultThreshold :: Int
 defaultThreshold = 10
 
-incrementalTrial :: Monad m => Int -> Int -> (Int -> m (Maybe SMTSolution)) -> m (Maybe SMTSolution)
+incrementalTrial :: Monad m => Int -> Int -> (Int -> m Solution) -> m Solution
 incrementalTrial i n act | i >= n = act i
                          | otherwise = do
                              act i >>= \case
-                               Just answer@(Satisfied _) -> return $ Just answer
+                               answer@(Satisfied _) -> return $ answer
                                _ -> incrementalTrial (i+1) n act
 
 main :: IO ()
@@ -28,7 +28,7 @@ main = do
     Success parsed -> do
       putStrLn $ "Constraint: " ++ ppr parsed
       incrementalTrial 2 defaultThreshold (flip bitblasting parsed) >>= \case
-        Nothing -> putStrLn "Failed to solve"
-        Just Unsatisfied -> putStrLn $ "Unsatisfiable (in threshold = " ++ show defaultThreshold ++ ")"
-        Just (Satisfied ans) -> putStrLn $ "Satisfiable by: " ++ concat (map pr (IM.toList ans))
+        Unknown -> putStrLn "Failed to solve"
+        Unsatisfied -> putStrLn $ "Unsatisfiable (in threshold = " ++ show defaultThreshold ++ ")"
+        Satisfied ans -> putStrLn $ "Satisfiable by: " ++ concat (map pr (IM.toList ans))
           where pr (i, n) = '\n' : 'X' : show i ++ " = " ++ show n

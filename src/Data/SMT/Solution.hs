@@ -2,4 +2,4 @@ module Data.SMT.Solution where
 
 import Data.IntMap
 
-data SMTSolution = Unsatisfied | Satisfied (IntMap Int)
+data Solution = Unknown | Unsatisfied | Satisfied (IntMap Int)
