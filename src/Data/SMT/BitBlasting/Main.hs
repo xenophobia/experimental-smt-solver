@@ -5,7 +5,7 @@ import Data.Monoid
 import Control.Applicative
 import Text.Trifecta
 import Data.SMT.Abstract.Types
-import Data.SMT.Parser
+import Data.SMT.BitBlasting.Parser
 import Data.SMT.BitBlasting.Types
 import Data.SMT.BitBlasting.Solver
 import Data.SMT.Solution
