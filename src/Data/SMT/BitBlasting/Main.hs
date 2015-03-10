@@ -9,6 +9,7 @@ import Data.SMT.BitBlasting.Parser
 import Data.SMT.BitBlasting.Types
 import Data.SMT.BitBlasting.Solver
 import Data.SMT.Solution
+import Data.SMT.Util
 import qualified Data.IntMap as IM
 
 main :: IO ()
@@ -21,5 +22,6 @@ main = do
       solve defaultConfig parsed >>= \case
         Unknown -> putStrLn "Failed to solve"
         Unsatisfied -> putStrLn $ "Unsatisfiable (in threshold = " ++ show (maxWidth defaultConfig) ++ ")"
-        Satisfied ans -> putStrLn $ "Satisfiable by: " ++ concat (map pr (IM.toList ans))
-          where pr (i, n) = '\n' : 'X' : show i ++ " = " ++ show n
+        Satisfied ans -> do
+          putStrLn $ "Satisfiable by: " ++ concat (map pr (IM.toList ans))
+            where pr (i, n) = '\n' : 'X' : show i ++ " = " ++ show n

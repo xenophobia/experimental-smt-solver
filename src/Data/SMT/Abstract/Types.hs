@@ -20,6 +20,9 @@ import qualified Data.IntSet as IS
 data FComponent = EQUAL | LESSTHAN | AND | OR
 data TComponent = VAR | INT | ADD | NEG | MUL
 
+type AllFComponent = [EQUAL, LESSTHAN, AND, OR]
+type AllTComponent = [VAR, INT, ADD, NEG, MUL]
+
 class Ppr a where
   ppr :: a -> String
 
@@ -92,5 +95,3 @@ instance (GetVariables (AbstFormula term cs :| cs)) => GetVariables (AbstFormula
   
 instance (GetVariables (AbstFormula term cs :| cs)) => GetVariables (AbstFormula term cs OR) where
   fv (f1 :|: f2) = fv f1 `IS.union` fv f2
-
-

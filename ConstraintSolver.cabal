@@ -61,7 +61,7 @@ executable bitblasting
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends: base >=4.7 && <4.8, ersatz, containers, parsers, mtl, extensible >= 0.3, trifecta > 1.5.1
+  build-depends: base >=4.7 && <4.8, ersatz, containers, parsers, mtl, extensible >= 0.3, trifecta > 1.5.1, failure
   
   -- Directories containing source files.
   hs-source-dirs: src
