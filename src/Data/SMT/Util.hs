@@ -13,7 +13,6 @@
 {-# Language DeriveDataTypeable #-}
 module Data.SMT.Util where
 
-import Control.Failure
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IM 
 import Data.Typeable

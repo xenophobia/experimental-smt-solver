@@ -26,9 +26,9 @@ import qualified Data.IntSet as IS
 import Ersatz hiding (Var, Satisfied, Unsatisfied, Unsolved, Solution)
 import qualified Ersatz
 
-instance Equatable a => Equatable (IntMap a) where
-  m1 === m2 = foldl (&&) true $ map (\k -> m1 IM.! k === m2 IM.! k) overlap
-    where overlap = IM.keys m1 `intersect` IM.keys m2
+(|===|) :: Equatable a => IntMap a -> IntMap a -> Bit
+m1 |===| m2 = foldl (&&) true $ map (\k -> m1 IM.! k === m2 IM.! k) overlap
+  where overlap = IM.keys m1 `intersect` IM.keys m2
 
 decodeToSigned :: [Bool] -> Int
 decodeToSigned [] = undefined
@@ -63,18 +63,18 @@ flattening width = flatteningEQUAL <:| flatteningAND <:| flatteningLESSTHAN <:| 
       (t1Flattened, m1) <- flatteningTerm width t1
       (t2Flattened, m2) <- flatteningTerm width t2
       assert $ t1Flattened === t2Flattened
-      assert $ m1 === m2
+      assert $ m1 |===| m2
       return $ m1 `union` m2
     flatteningAND (f1 :&: f2 :: FormulaOf AND) = do
       m1 <- flattening width f1
       m2 <- flattening width f2
-      assert $ m1 === m2
+      assert $ m1 |===| m2
       return $ m1 `union` m2
     flatteningLESSTHAN (t1 :<: t2 :: FormulaOf LESSTHAN) = do
       (t1Flattened, m1) <- flatteningTerm width t1
       (t2Flattened, m2) <- flatteningTerm width t2
       t1Flattened `isLessThan` t2Flattened
-      assert $ m1 === m2
+      assert $ m1 |===| m2
       return $ m1 `union` m2
 
 isLessThan :: (MonadState s m, HasSAT s) => [Bit] -> [Bit] -> m ()
@@ -98,7 +98,7 @@ flatteningTerm width = flatteningTermVAR
       (t1Flattened, m1) <- flatteningTerm width t1
       (t2Flattened, m2) <- flatteningTerm width t2
       flattened <- adder width t1Flattened t2Flattened
-      assert $ m1 === m2
+      assert $ m1 |===| m2
       assert $ (head t1Flattened /== head t2Flattened)
                || (head t1Flattened === head t2Flattened && head t1Flattened === head flattened) -- overflow detection
       return (flattened, m1 `union` m2)
@@ -113,7 +113,7 @@ flatteningTerm width = flatteningTermVAR
       flattened_ <- foldM (adder (width * 2)) (head pShifted) (tail pShifted)
       let (ofs, flattened@(sig:_)) = splitAt width flattened_
       assert $ Ersatz.all (=== sig) ofs
-      assert $ m1 === m2
+      assert $ m1 |===| m2
       return (flattened, m1 `union` m2)
     flatteningTermNeg (Neg t) = do
       (tFlattened, m) <- flatteningTerm width t
@@ -128,6 +128,6 @@ adder width bs1 bs2 = do
   return bs
   where
     aux cin (b1, b2, b) = do
-      let (b', cout) = full_adder b1 b2 cin
+      let (b', cout) = fullAdder b1 b2 cin
       assert $ b === b'
       return cout
