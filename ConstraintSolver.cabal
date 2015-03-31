@@ -47,25 +47,34 @@ cabal-version: >=1.18
 
 
 executable bitblasting
-  -- .hs or .lhs file containing the Main module.
   main-is: Data/SMT/BitBlasting/Main.hs
-  
-  -- Modules included in this executable, other than Main.
   other-modules: Data.SMT.Solution
                , Data.SMT.Abstract.Types
+               , Data.SMT.Util
                , Data.SMT.Parser
                , Data.SMT.BitBlasting.Types
+               , Data.SMT.BitBlasting.Parser
                , Data.SMT.BitBlasting.Solver
-  
-  -- LANGUAGE extensions used by modules in this package.
-  -- other-extensions:    
-  
-  -- Other library packages from which modules are imported.
   build-depends: base >=4.7 && <4.8, ersatz >= 0.3, containers, parsers, mtl, extensible >= 0.3, trifecta > 1.5.1
-  
-  -- Directories containing source files.
   hs-source-dirs: src
-  
-  -- Base language which the package is written in.
   default-language: Haskell2010
   
+library
+  exposed-modules: Data.SMT.Solution
+                 , Data.SMT.Abstract.Types
+                 , Data.SMT.Util
+                 , Data.SMT.Parser
+                 , Data.SMT.BitBlasting.Types
+                 , Data.SMT.BitBlasting.Parser
+                 , Data.SMT.BitBlasting.Solver
+  build-depends: base >=4.7 && <4.8, ersatz >= 0.3, containers, parsers, mtl, extensible >= 0.3, trifecta > 1.5.1
+  hs-source-dirs: src
+  default-language: Haskell2010
+
+test-suite bitblastingTests
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs: test
+  ghc-options: -Wall
+  build-depends: base >=4.7 && <4.8, containers, parsers, trifecta > 1.5.1, ConstraintSolver, hspec
+  default-language: Haskell2010

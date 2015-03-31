@@ -1,6 +1,6 @@
 {-# Language ViewPatterns #-}
 {-# Language GADTs #-}
-{-# LAnguage TypeOperators #-}
+{-# Language TypeOperators #-}
 {-# Language DataKinds #-}
 {-# Language ScopedTypeVariables #-}
 {-# Language RecordWildCards #-}
