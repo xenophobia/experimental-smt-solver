@@ -3,6 +3,6 @@ language: haskell
 ghc:
   - 7.8
 
-before_script
+before_script:
   - "travis_retry wget http://minisat.se/downloads/MiniSat_v1.14_linux -O minisat"
   - "export PATH=$TRAVIS_BUILD_DIR:$PATH"
